@@ -6,6 +6,9 @@ import time
 import re
 from PIL import Image, ImageOps, ImageDraw, PngImagePlugin # 9.1.1
 
+def euclideanDistance(a, b):
+  return  math.sqrt(pow(a[0] - b[0], 2) + pow(a[1] - b[1], 2))
+
 def createPins(args, w, h):
   center = (round(w/2), round(h/2))
   radium = round((w if w < h else h)/2) - args.safetygap
@@ -21,7 +24,11 @@ def createPins(args, w, h):
 
   draw.point(result, "white")
 
-  # TODO: Check that all pins are different / spaced with at least X
+  if args.boardsize > 0:
+    phyDistanceBetweenPins = args.boardsize * euclideanDistance(result[0], result[1]) / ((radium)*2 + args.safetygap)
+    if phyDistanceBetweenPins < 5:
+      print("The physical separation between pins is {:.3f}mm but at least 5mm are recommended".format(phyDistanceBetweenPins))
+      input("Press <Enter> if you wish to continue anyway or Ctrl+C to kill the software")
   
   oimgd = list(oimg.getdata())
   oimgd = [oimgd[offset:offset+w] for offset in range(0, w*h, w)]
@@ -117,6 +124,7 @@ def main(args):
 if __name__=="__main__" :
     parser = argparse.ArgumentParser()
     parser.add_argument("-i", "--in", dest="inf", required = True, type=argparse.FileType('r'))
+    parser.add_argument("-b", "--board-size", dest="boardsize", type=int, default=0, help="Physical board size, in mm, this will match the length of the shortest side of the input image")
     parser.add_argument("-o", "--out", dest="outf", type=str, nargs='?', const='auto', default='not-wanted')
     parser.add_argument("-p", "--pins", dest="pinnb", default = 300, type=int)
     parser.add_argument("-s", "--start-pin", dest="startpin", default = 0, type=int)
